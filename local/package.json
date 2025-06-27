@@ -1,0 +1,15 @@
+{
+    "name": "echo-bot",
+    "version": "0.0.0",
+    "description": "An example LINE bot just to echo messages written in CommonJS",
+    "main": "index.js",
+    "scripts": {
+        "start": "node ."
+    },
+    "dependencies": {
+        "@azure/openai": "^2.0.0",
+        "@line/bot-sdk": "^9.2.2",
+        "express": "^4.17.3",
+        "openai": "^4.73.0"
+    }
+}

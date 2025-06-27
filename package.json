@@ -1,0 +1,16 @@
+{
+    "name": "line-bot",
+    "version": "",
+    "description": "",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node index.js"
+    },
+    "author": "",
+    "dependencies": {
+        "@azure/cosmos": "^4.1.1",
+        "@azure/storage-blob": "^12.25.0",
+        "@line/bot-sdk": "^9.2.2",
+        "express": "^4.21.1"
+    }
+}
