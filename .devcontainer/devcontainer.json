@@ -21,6 +21,7 @@
                 "ms-azuretools.vscode-bicep",
                 "ms-toolsai.prompty",
                 "ms-azuretools.vscode-azure-github-copilot",
+                "ms-vscode.vscode-json",
                 "github.copilot"
             ]
         }
