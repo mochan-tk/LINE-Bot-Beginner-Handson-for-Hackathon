@@ -3,11 +3,13 @@
 const line = require('@line/bot-sdk');
 const express = require('express');
 // https://platform.openai.com/docs/guides/text-generation?text-generation-quickstart-example=text
+const dotenv = require('dotenv');
+dotenv.config();
+const token = process.env["GITHUB_TOKEN"];
+const endpoint = "https://models.github.ai/inference";
+const model = "openai/gpt-4.1";
 const { OpenAI } = require('openai');
-
-const openaiClient = new OpenAI({
-  apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
-});
+const openaiClient = new OpenAI({ baseURL: endpoint, apiKey: token });
 
 // 会話履歴の保存（本当はDBを使った方が良い、ハンズオンなので簡単な方法で実施した）
 let chatHistory = {};  
@@ -75,7 +77,7 @@ async function handleEvent(event) {
 
   // モデルに渡すメッセージ情報の作成
   let messages = [
-    { role: "system", content: "あなたは日本語を話すAIアシスタントです。マラソン好きでマラソンに詳しいAIでもあり、なるべく短い文でクイックに返事を返します。" },
+    { role: "system", content: "あなたは日本語を話すAIアシスタントです。返事はなるべく簡潔に行います。" },
   ];
 
   let lastHistory = getChatHistory(userId);
@@ -89,7 +91,7 @@ async function handleEvent(event) {
 
   let msg = '';
   const completion = await openaiClient.chat.completions.create({
-    model: "gpt-4o",
+    model: model,
     // model: "ft:gpt-4o-mini-2024-07-18:personal::AX0kz3eh",
     messages: messages,
     store: true
