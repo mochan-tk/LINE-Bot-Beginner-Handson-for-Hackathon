@@ -2,6 +2,9 @@
 
 const line = require('@line/bot-sdk');
 const express = require('express');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 // create LINE SDK config from env variables
 const config = {
