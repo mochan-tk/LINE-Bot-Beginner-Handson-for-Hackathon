@@ -5,6 +5,47 @@ const express = require('express');
 const crypto = require("crypto");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const { CosmosClient } = require("@azure/cosmos");
+const { AzureOpenAI } = require("openai");
+
+const deployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME; // model = "deployment name".
+const apiVersion = "2024-10-21";
+const ai_key = process.env.AZURE_OPENAI_KEY;
+const ai_endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+const openaiClient = new AzureOpenAI({
+  apiKey: ai_key,
+  deployment: deployment,
+  endpoint: ai_endpoint,
+  apiVersion: apiVersion,
+});
+
+// 会話履歴の保存（本当はDBを使った方が良い、ハンズオンなので簡単な方法で実施した）
+let chatHistory = {};  
+
+// データを追加する関数  
+function saveChatHistory(id, currentHistory) {  
+
+  if (!chatHistory[id]) {  
+    chatHistory[id] = [];  
+  }  
+
+  // 履歴は最大10件までにしておく
+  if (chatHistory[id].length >= 10) {  
+    chatHistory[id].splice(0, 2); // 最古のメッセージを削除  
+  }  
+
+  chatHistory[id] = currentHistory;
+}  
+
+// データを取得する関数  
+function getChatHistory(id) {  
+  if (chatHistory[id]) {  
+      console.log(`Customer retrieved: ${id}`);  
+      return chatHistory[id];  
+  } else {  
+      console.log(`Chat History not found for id: ${id}`);  
+      return []; 
+  }  
+}  
 
 // Azure Storage
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
@@ -237,14 +278,59 @@ async function handleEvent(event) {
     
     // const echo = { type: 'text', text: description };
 
-    // create a echoing text message
-    const echo = { type: 'text', text: event.message.text };
+  // https://learn.microsoft.com/en-us/javascript/api/overview/azure/openai-readme?view=azure-node-preview
+  // モデルに渡すメッセージ情報の作成
+  let messages = [
+    { role: "system", content: "あなたは日本語を話すAIアシスタントです。できるだけ簡潔に返答を返します。" },
+  ];
 
-    // use reply API
-    return client.replyMessage({
-      replyToken: event.replyToken,
-      messages: [echo],
-    });
+  let lastHistory = getChatHistory(userId);
+
+  messages = messages.concat(lastHistory)
+
+  // ユーザーのメッセージをセット
+  messages.push({ role: "user", content: event.message.text });
+
+  console.log(`Messages: ${messages.map((m) => m.content).join("\n")}`);
+
+  // const result = await openaiClient.chat.completions.create(deploymentId, messages, { maxTokens: 4096 });
+
+  const events = await openaiClient.chat.completions.create({
+    messages: messages,
+    model: "",
+    max_tokens: 128,
+    stream: true,
+  });
+
+  let msg = '';
+  for await (const event of events) {
+    for (const choice of event.choices) {
+      const delta = choice.delta?.content;
+      if (delta !== undefined) {
+        msg　 += `${delta}`;
+        // console.log(`Chatbot: ${delta}`);
+      }
+    }
+  }
+
+  // 会話履歴の保存
+  lastHistory.push({ role: "user", content: event.message.text });
+  lastHistory.push({ role: "assistant", content: msg });
+  saveChatHistory(userId, lastHistory);
+
+  // // DEBUG用:for文でメッセージを順番に処理  
+  // for (let i = 0; i < lastHistory.length; i++) {  
+  //   console.log(`Message ${i + 1}:　Content - ${lastHistory[i].content}`);  
+  // }  
+
+  // create an echoing text message
+  const echo = { type: 'text', text: msg };
+
+  // use reply API
+  return client.replyMessage({
+    replyToken: event.replyToken,
+    messages: [echo],
+  });
 }
 
 const getStreamData = async (stream)  => {
