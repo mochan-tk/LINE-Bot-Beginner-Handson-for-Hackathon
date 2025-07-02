@@ -7,6 +7,8 @@
         "start": "node ."
     },
     "dependencies": {
+        "@azure/cosmos": "^4.1.1",
+        "@azure/storage-blob": "^12.25.0",
         "@azure/openai": "^2.0.0",
         "@line/bot-sdk": "^9.2.2",
         "express": "^4.17.3",
